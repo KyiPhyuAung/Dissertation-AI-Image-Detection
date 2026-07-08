@@ -46,12 +46,10 @@ class GenImageDataset(Dataset):
 
             for image_path in class_dir.rglob("*"):
 
-                if image_path.suffix.lower() in [
-                    ".jpg",
-                    ".jpeg",
-                    ".png",
-                    ".webp"
-                ]:
+                if (
+                    image_path.suffix.lower() in [".jpg", ".jpeg", ".png", ".webp"]
+                    and not image_path.name.startswith("._")
+                ):
 
                     self.samples.append(
                         (image_path, label)

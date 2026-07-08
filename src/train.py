@@ -2,17 +2,23 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from src.config import DATASET_DIR, DEVICE, BATCH_SIZE, LEARNING_RATE, NUM_EPOCHS, CHECKPOINT_DIR
-from src.dataset import AIImageDataset
+from src.config import DEVICE, BATCH_SIZE, LEARNING_RATE, NUM_EPOCHS, CHECKPOINT_DIR, TINY_GENIMAGE_DIR
+from src.genimage_dataset import GenImageDataset
 from src.transforms import get_train_transforms
-from src.models import build_resnet18
+from src.models import build_model
+
+
+MODEL_NAME = "efficientnet_b0"
+GENERATOR = "imagenet_midjourney"
 
 
 def train():
     CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
-    dataset = AIImageDataset(
-        dataset_root=DATASET_DIR / "sample",
+    dataset = GenImageDataset(
+        root_dir=TINY_GENIMAGE_DIR,
+        generator=GENERATOR,
+        split="train",
         transform=get_train_transforms()
     )
 
@@ -22,7 +28,7 @@ def train():
         shuffle=True
     )
 
-    model = build_resnet18().to(DEVICE)
+    model = build_model(MODEL_NAME).to(DEVICE)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
@@ -30,10 +36,13 @@ def train():
     best_accuracy = 0.0
 
     print(f"Using device: {DEVICE}")
+    print(f"Model: {MODEL_NAME}")
+    print(f"Generator: {GENERATOR}")
     print(f"Training images: {len(dataset)}")
 
     for epoch in range(NUM_EPOCHS):
         model.train()
+
         running_loss = 0.0
         correct = 0
         total = 0
@@ -57,16 +66,17 @@ def train():
             correct += (predicted == labels).sum().item()
 
         accuracy = 100 * correct / total
+        avg_loss = running_loss / len(dataloader)
 
         print(
-            f"Epoch [{epoch+1}/{NUM_EPOCHS}] "
-            f"Loss: {running_loss:.4f} "
+            f"Epoch [{epoch + 1}/{NUM_EPOCHS}] "
+            f"Loss: {avg_loss:.4f} "
             f"Accuracy: {accuracy:.2f}%"
         )
 
         if accuracy > best_accuracy:
             best_accuracy = accuracy
-            checkpoint_path = CHECKPOINT_DIR / "resnet18_sample_best.pth"
+            checkpoint_path = CHECKPOINT_DIR / f"{MODEL_NAME}_{GENERATOR}_best.pth"
             torch.save(model.state_dict(), checkpoint_path)
             print(f"Saved best model to {checkpoint_path}")
 
