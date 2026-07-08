@@ -16,6 +16,9 @@ FIGURES_DIR = PROJECT_ROOT / "figures"
 # Hardware
 # =============================================================================
 
+EXTERNAL_DATASET_DIR = Path("/Volumes/KyiPhyuAung/Dissertation/datasets")
+TINY_GENIMAGE_DIR = EXTERNAL_DATASET_DIR / "tiny-genimage"
+
 DEVICE = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
 # =============================================================================
