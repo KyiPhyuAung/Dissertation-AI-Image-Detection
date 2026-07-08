@@ -1,44 +1,53 @@
+import argparse
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from src.config import DEVICE, BATCH_SIZE, LEARNING_RATE, NUM_EPOCHS, CHECKPOINT_DIR, TINY_GENIMAGE_DIR
+from src.config import (
+    DEVICE,
+    BATCH_SIZE,
+    LEARNING_RATE,
+    NUM_EPOCHS,
+    CHECKPOINT_DIR,
+    TINY_GENIMAGE_DIR,
+)
 from src.genimage_dataset import GenImageDataset
 from src.transforms import get_train_transforms
 from src.models import build_model
 
 
-MODEL_NAME = "efficientnet_b0"
-GENERATOR = "imagenet_midjourney"
-
-
-def train():
+def train(model_name: str, generator: str):
     CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
     dataset = GenImageDataset(
         root_dir=TINY_GENIMAGE_DIR,
-        generator=GENERATOR,
+        generator=generator,
         split="train",
-        transform=get_train_transforms()
+        transform=get_train_transforms(),
     )
 
     dataloader = DataLoader(
         dataset,
         batch_size=BATCH_SIZE,
-        shuffle=True
+        shuffle=True,
     )
 
-    model = build_model(MODEL_NAME).to(DEVICE)
+    model = build_model(model_name).to(DEVICE)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     best_accuracy = 0.0
 
-    print(f"Using device: {DEVICE}")
-    print(f"Model: {MODEL_NAME}")
-    print(f"Generator: {GENERATOR}")
+    print("=" * 70)
+    print("Training Experiment")
+    print("=" * 70)
+    print(f"Device: {DEVICE}")
+    print(f"Model: {model_name}")
+    print(f"Training generator: {generator}")
     print(f"Training images: {len(dataset)}")
+    print("=" * 70)
 
     for epoch in range(NUM_EPOCHS):
         model.train()
@@ -76,10 +85,18 @@ def train():
 
         if accuracy > best_accuracy:
             best_accuracy = accuracy
-            checkpoint_path = CHECKPOINT_DIR / f"{MODEL_NAME}_{GENERATOR}_best.pth"
+            checkpoint_path = CHECKPOINT_DIR / f"{model_name}_{generator}_best.pth"
             torch.save(model.state_dict(), checkpoint_path)
             print(f"Saved best model to {checkpoint_path}")
 
 
 if __name__ == "__main__":
-    train()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model", required=True)
+    parser.add_argument("--generator", required=True)
+    args = parser.parse_args()
+
+    train(
+        model_name=args.model,
+        generator=args.generator,
+    )
