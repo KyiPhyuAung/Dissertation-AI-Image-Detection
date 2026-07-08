@@ -2,13 +2,15 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from src.config import DATASET_DIR, DEVICE, BATCH_SIZE, LEARNING_RATE, NUM_EPOCHS
+from src.config import DATASET_DIR, DEVICE, BATCH_SIZE, LEARNING_RATE, NUM_EPOCHS, CHECKPOINT_DIR
 from src.dataset import AIImageDataset
 from src.transforms import get_train_transforms
 from src.models import build_resnet18
 
 
 def train():
+    CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+
     dataset = AIImageDataset(
         dataset_root=DATASET_DIR / "sample",
         transform=get_train_transforms()
@@ -24,6 +26,8 @@ def train():
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+    best_accuracy = 0.0
 
     print(f"Using device: {DEVICE}")
     print(f"Training images: {len(dataset)}")
@@ -59,6 +63,12 @@ def train():
             f"Loss: {running_loss:.4f} "
             f"Accuracy: {accuracy:.2f}%"
         )
+
+        if accuracy > best_accuracy:
+            best_accuracy = accuracy
+            checkpoint_path = CHECKPOINT_DIR / "resnet18_sample_best.pth"
+            torch.save(model.state_dict(), checkpoint_path)
+            print(f"Saved best model to {checkpoint_path}")
 
 
 if __name__ == "__main__":
