@@ -1,7 +1,7 @@
 import argparse
 import json
 from datetime import datetime
-
+from src.mixed_genimage_dataset import MixedGenImageDataset
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -32,14 +32,27 @@ TEST_GENERATORS = [
     "imagenet_ai_0419_vqdm",
 ]
 
+MIXED_TRAIN_GENERATORS = [
+    "imagenet_midjourney",
+    "imagenet_ai_0424_sdv5",
+    "imagenet_glide",
+]
 
 def train_model(model_name, train_generator, experiment_dir):
-    dataset = GenImageDataset(
-        root_dir=TINY_GENIMAGE_DIR,
-        generator=train_generator,
-        split="train",
-        transform=get_train_transforms(),
-    )
+    if train_generator == "mixed":
+        dataset = MixedGenImageDataset(
+            root_dir=TINY_GENIMAGE_DIR,
+            generators=MIXED_TRAIN_GENERATORS,
+            split="train",
+            transform=get_train_transforms(),
+        )
+    else:
+        dataset = GenImageDataset(
+            root_dir=TINY_GENIMAGE_DIR,
+            generator=train_generator,
+            split="train",
+            transform=get_train_transforms(),
+        )
 
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
